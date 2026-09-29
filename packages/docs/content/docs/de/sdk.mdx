@@ -116,7 +116,7 @@ Der Nutzer sieht die vollständige Liste einmal, bei der Installation der Erweit
 
 ## Text erzeugen
 
-Mit der Berechtigung `model` bittet `host.generate` das Small Model des Nutzers um eine einmalige Antwort: eine Zusammenfassung, einen Titel, einen Entwurf. Nichts landet in einer Session, es wird kein Verlauf gespeichert, und die Erweiterung wählt nie einen Anbieter. OpenChamber nutzt dasselbe Modell, das es für seine eigene Hintergrundarbeit verwendet, eingestellt unter Einstellungen → Sessions → Small Model, oder das Small Model des Anbieters, mit dem der Nutzer gerade arbeitet, oder das Standardmodell aus seiner OpenCode-Konfiguration.
+Mit der Berechtigung `model` bittet `host.generate` das Small Model des Nutzers um eine einmalige Antwort: eine Zusammenfassung, einen Titel, einen Entwurf. Nichts landet in einer Session, es wird kein Verlauf gespeichert, und die Erweiterung wählt nie einen Anbieter. OpenChamber nutzt dasselbe Modell, das es für seine eigene Hintergrundarbeit verwendet, eingestellt unter Einstellungen → Sessions → Small Model oder in der OpenCode-Konfiguration, oder das Small Model des Anbieters, mit dem der Nutzer gerade arbeitet, oder das Standardmodell aus seiner OpenCode-Konfiguration.
 
 ```ts
 const { text } = await host.generate({

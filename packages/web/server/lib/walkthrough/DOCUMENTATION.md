@@ -168,8 +168,9 @@ model picker, only shows providers with a usable login. The in-panel picker on a
 blocked walkthrough writes this setting too, so recovering from a refusal never
 silently changes the model behind commit messages.
 
-A settings or `opencode.json` `small_model` override can still name a provider
-with no usable login (neither `auth.json` nor `provider.<id>.options.apiKey`).
+A settings override or OpenCode's own configured small model
+(`agents.title.model`, v1 `small_model`) can still name a provider with no
+usable login (neither `auth.json` nor `provider.<id>.options.apiKey`).
 `describeSmallModel` reports that as `hasLogin: false`, readiness refuses with
 `reason: 'no-provider-login'` and omits the unusable model so the panel cannot
 present it as selected, and generation maps the same code to HTTP 401. The UI

@@ -116,7 +116,7 @@ OpenChamber がマニフェストを読み、拡張機能が求めているも�
 
 ## テキストを生成する
 
-`model` 権限があると、`host.generate` はユーザーの Small Model に一回限りの回答を求めます。要約、タイトル、下書きなどです。何もセッションには入らず、履歴も残らず、拡張機能がプロバイダーを選ぶこともありません。OpenChamber は自身のバックグラウンド作業で使うのと同じモデルを使います。設定 → セッション → Small Model で選んだモデル、ユーザーが使っているプロバイダーの small model、またはユーザーの OpenCode 設定の既定モデルです。
+`model` 権限があると、`host.generate` はユーザーの Small Model に一回限りの回答を求めます。要約、タイトル、下書きなどです。何もセッションには入らず、履歴も残らず、拡張機能がプロバイダーを選ぶこともありません。OpenChamber は自身のバックグラウンド作業で使うのと同じモデルを使います。設定 → セッション → Small Model または OpenCode 設定で選んだモデル、ユーザーが使っているプロバイダーの small model、またはユーザーの OpenCode 設定の既定モデルです。
 
 ```ts
 const { text } = await host.generate({

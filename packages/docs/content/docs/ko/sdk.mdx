@@ -116,7 +116,7 @@ OpenChamber가 매니페스트를 읽고, 확장이 요구하는 항목을 나�
 
 ## 텍스트 생성
 
-`model` 권한이 있으면 `host.generate`는 사용자의 Small Model에 요약, 제목, 초안 같은 일회성 답변을 요청합니다. 세션에는 아무것도 들어가지 않고 기록도 남지 않으며, 확장이 프로바이더를 고르는 일도 없습니다. OpenChamber는 자신의 백그라운드 작업에 쓰는 것과 같은 모델을 사용합니다. 설정 → 세션 → Small Model 에서 고른 모델, 사용자가 작업 중인 프로바이더의 small model, 또는 사용자의 OpenCode 설정에 있는 기본 모델입니다.
+`model` 권한이 있으면 `host.generate`는 사용자의 Small Model에 요약, 제목, 초안 같은 일회성 답변을 요청합니다. 세션에는 아무것도 들어가지 않고 기록도 남지 않으며, 확장이 프로바이더를 고르는 일도 없습니다. OpenChamber는 자신의 백그라운드 작업에 쓰는 것과 같은 모델을 사용합니다. 설정 → 세션 → Small Model 또는 OpenCode 설정에서 고른 모델, 사용자가 작업 중인 프로바이더의 small model, 또는 사용자의 OpenCode 설정에 있는 기본 모델입니다.
 
 ```ts
 const { text } = await host.generate({

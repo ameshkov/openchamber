@@ -3,12 +3,25 @@ import { registerSmallModelRoutes } from './routes.js';
 import http from 'node:http';
 import os from 'os';
 import path from 'path';
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'bun:test';
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'bun:test';
 
 // The settings override is read straight from disk, so without this the suite
 // would resolve whatever small model the developer running it has configured.
 const TEMP_DATA_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'small-model-settings-'));
 process.env.OPENCHAMBER_DATA_DIR = TEMP_DATA_DIR;
+
+// OpenCode's own config is read from disk too. `shared.js` resolves
+// OPENCODE_CONFIG_DIR when it is first imported, so the temp directory must be
+// in place before ./index.js loads, and a developer-set OPENCODE_CONFIG must
+// not shadow it.
+const TEMP_OPENCODE_DIR = fs.mkdtempSync(path.join(os.tmpdir(), 'small-model-opencode-'));
+const previousOpenCodeConfigDir = process.env.OPENCODE_CONFIG_DIR;
+const previousOpenCodeConfig = process.env.OPENCODE_CONFIG;
+process.env.OPENCODE_CONFIG_DIR = TEMP_OPENCODE_DIR;
+delete process.env.OPENCODE_CONFIG;
+
+const OPENCODE_CONFIG_FILE = path.join(TEMP_OPENCODE_DIR, 'opencode.json');
+const writeOpenCodeConfig = (config) => fs.writeFileSync(OPENCODE_CONFIG_FILE, JSON.stringify(config));
 
 const { generateSmallModelText, describeSmallModel, listAuthenticatedProviders, setUnavailableRetryDelaysForTest } = await import('./index.js');
 const { configureOpenCodeRuntimeProviders, resetOpenCodeRuntimeProviders } = await import('./client.js');
@@ -81,9 +94,15 @@ beforeAll(async () => {
 afterAll(() => {
   server?.close();
   fs.rmSync(TEMP_DATA_DIR, { recursive: true, force: true });
+  fs.rmSync(TEMP_OPENCODE_DIR, { recursive: true, force: true });
+  if (previousOpenCodeConfigDir === undefined) delete process.env.OPENCODE_CONFIG_DIR;
+  else process.env.OPENCODE_CONFIG_DIR = previousOpenCodeConfigDir;
+  if (previousOpenCodeConfig === undefined) delete process.env.OPENCODE_CONFIG;
+  else process.env.OPENCODE_CONFIG = previousOpenCodeConfig;
 });
 
 beforeEach(() => {
+  fs.rmSync(OPENCODE_CONFIG_FILE, { force: true });
   state.models = [MODEL()];
   state.providers = [{ id: 'anthropic', name: 'Anthropic', activation: 'auto', package: 'x' }];
   state.defaultModel = MODEL();
@@ -462,6 +481,111 @@ describe('describeSmallModel', () => {
     configureOpenCodeRuntimeProviders(null);
 
     expect(await describeSmallModel({ directory: '/proj' })).toBeNull();
+  });
+});
+
+describe('OpenCode config small model', () => {
+  it('reads agents.title.model and reports it as the source', async () => {
+    writeOpenCodeConfig({ agents: { title: { model: 'openai/gpt-5.6-luna' } } });
+
+    expect(await describeSmallModel({ directory: '/proj' }))
+      .toMatchObject({ providerID: 'openai', modelID: 'gpt-5.6-luna', source: 'opencode-config' });
+
+    const result = await generateSmallModelText({ prompt: 'hi', directory: '/proj' });
+    expect(result).toMatchObject({ source: 'opencode-config' });
+    expect(lastGenerate().body.model).toEqual({ id: 'gpt-5.6-luna', providerID: 'openai' });
+  });
+
+  it('reads the v1 small_model key when the title agent has no model', async () => {
+    writeOpenCodeConfig({ small_model: 'google/gemini-3.6-flash' });
+
+    expect(await describeSmallModel({ directory: '/proj' }))
+      .toMatchObject({ providerID: 'google', modelID: 'gemini-3.6-flash', source: 'opencode-config' });
+  });
+
+  it('prefers agents.title.model over small_model', async () => {
+    writeOpenCodeConfig({
+      small_model: 'google/gemini-3.6-flash',
+      agents: { title: { model: 'openai/gpt-5.6-luna' } },
+    });
+
+    expect(await describeSmallModel({ directory: '/proj' }))
+      .toMatchObject({ providerID: 'openai', modelID: 'gpt-5.6-luna', source: 'opencode-config' });
+  });
+
+  it('reads the v1 agent section key', async () => {
+    writeOpenCodeConfig({ agent: { title: { model: 'google/gemini-3.6-flash' } } });
+
+    expect(await describeSmallModel({ directory: '/proj' }))
+      .toMatchObject({ providerID: 'google', modelID: 'gemini-3.6-flash', source: 'opencode-config' });
+  });
+
+  it('reads the project config of the directory it resolves for', async () => {
+    const projectDir = fs.mkdtempSync(path.join(os.tmpdir(), 'small-model-project-'));
+    fs.mkdirSync(path.join(projectDir, '.opencode'), { recursive: true });
+    fs.writeFileSync(
+      path.join(projectDir, '.opencode', 'opencode.json'),
+      JSON.stringify({ agents: { title: { model: 'openai/gpt-5.6-luna' } } }),
+    );
+
+    try {
+      expect(await describeSmallModel({ directory: projectDir }))
+        .toMatchObject({ providerID: 'openai', modelID: 'gpt-5.6-luna', source: 'opencode-config' });
+
+      // Another directory's config does not leak in.
+      expect(await describeSmallModel({ directory: '/proj' }))
+        .toMatchObject({ providerID: 'anthropic', source: 'default' });
+    } finally {
+      fs.rmSync(projectDir, { recursive: true, force: true });
+    }
+  });
+
+  it('outranks the small model of the session provider', async () => {
+    state.models = [MODEL({ family: 'claude-haiku' })];
+    writeOpenCodeConfig({ agents: { title: { model: 'openai/gpt-5.6-luna' } } });
+
+    const result = await generateSmallModelText({
+      prompt: 'hi',
+      directory: '/proj',
+      preferredProviderID: 'anthropic',
+      preferredModelID: 'claude-haiku-4-5',
+      restrictToPreferredProvider: true,
+    });
+
+    // The configured model is an explicit user choice, so the restriction to
+    // the session provider does not overrule it.
+    expect(result).toMatchObject({ providerID: 'openai', modelID: 'gpt-5.6-luna', source: 'opencode-config' });
+    expect(lastGenerate().body.model).toEqual({ id: 'gpt-5.6-luna', providerID: 'openai' });
+  });
+
+  it('stays behind the Settings override and an explicit request model', async () => {
+    writeOpenCodeConfig({ agents: { title: { model: 'google/gemini-3.6-flash' } } });
+    fs.writeFileSync(
+      path.join(TEMP_DATA_DIR, 'settings.json'),
+      JSON.stringify({ smallModelUseDefault: false, smallModelOverride: 'openai/gpt-5.6-luna' }),
+    );
+
+    try {
+      expect(await describeSmallModel({ directory: '/proj' }))
+        .toMatchObject({ providerID: 'openai', modelID: 'gpt-5.6-luna', source: 'settings' });
+
+      expect(await describeSmallModel({ directory: '/proj', overrideModel: 'anthropic/claude-haiku-4-5' }))
+        .toMatchObject({ providerID: 'anthropic', modelID: 'claude-haiku-4-5', source: 'request' });
+    } finally {
+      fs.rmSync(path.join(TEMP_DATA_DIR, 'settings.json'), { force: true });
+    }
+  });
+
+  it('falls through when the config is unreadable', async () => {
+    const logError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      fs.writeFileSync(OPENCODE_CONFIG_FILE, '{ "agents": ');
+
+      expect(await describeSmallModel({ directory: '/proj' }))
+        .toMatchObject({ providerID: 'anthropic', modelID: 'claude-haiku-4-5', source: 'default' });
+    } finally {
+      logError.mockRestore();
+    }
   });
 });
 

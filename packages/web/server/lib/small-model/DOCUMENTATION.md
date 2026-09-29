@@ -53,13 +53,21 @@ login `generateSmallModelText` throws `404`. What happens next is per feature:
 
 ## Model resolution
 
-Four things are decided here, in order:
+Five things are decided here, in order:
 
 1. An explicit `model` on the request (`provider/model`) — `source: 'request'`.
 2. OpenChamber's settings override (Settings → Sessions → Small Model): when
    `smallModelUseDefault` is `false`, `smallModelOverride` wins —
    `source: 'settings'`.
-3. The small model of the caller's provider (`preferredProviderID`: the
+3. The small model the user configured in OpenCode itself —
+   `source: 'opencode-config'`. OpenCode 2 keeps it on its built-in `title`
+   agent (`agents.title.model`), where v1's top-level `small_model` migrated;
+   both keys are read, the v2 one first, with OpenCode's own precedence (user <
+   project < `OPENCODE_CONFIG` files, `agents` over the v1 `agent` section).
+   Like the Settings override this is an explicit user choice, so it outranks
+   the provider scan below and may name another provider. An unreadable config
+   is not a choice: resolution falls through to the next step.
+4. The small model of the caller's provider (`preferredProviderID`: the
    session's, or the composer's for commit messages, PR descriptions, spoken
    summaries, the diff walkthrough and extensions) —
    `source: 'session-provider-small'` — found by `pickSmallModelInProvider`:
@@ -77,13 +85,14 @@ Four things are decided here, in order:
    (session titles, the session goal, session assist, notes from a selection)
    and finds none then takes the session's own model — `source:
    'session-model'`: costlier than a small model elsewhere, but never another
-   provider's subscription.
-4. Otherwise `GET /api/model/default` — `source: 'default'`. This is
+   provider's subscription. Only the explicit user choices — `request`,
+   `settings`, `opencode-config` — are allowed to leave the session provider.
+5. Otherwise `GET /api/model/default` — `source: 'default'`. This is
    OpenCode's default chat model, not a small one; it is the last resort.
 
 There is deliberately no step that takes a small model from whichever other
 provider is connected. Until 2026-09 one existed (`source: 'small'`, after
-step 3); it sent diffs and replies to a provider the user never chose for
+step 4); it sent diffs and replies to a provider the user never chose for
 them, and the walkthrough and extensions reached it without even passing
 their provider. Content goes only to the provider the user works with, the
 model they picked, or the default they configured.

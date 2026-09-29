@@ -116,7 +116,7 @@ Kullanıcı tam listeyi bir kez, eklentiyi kurarken görür ve ya onaylar ya da 
 
 ## Metin üretme
 
-`model` yeteneğiyle `host.generate`, kullanıcının Small Model'inden tek seferlik bir yanıt ister: bir özet, bir başlık, bir taslak. Hiçbir şey bir oturuma girmez, geçmiş tutulmaz ve eklenti asla bir sağlayıcı seçmez. OpenChamber, kendi arka plan işleri için kullandığı aynı modeli kullanır; bu model Ayarlar → Oturumlar → Small Model üzerinden seçilen model, kullanıcının çalıştığı sağlayıcının küçük modeli ya da kullanıcının OpenCode yapılandırmasındaki varsayılan modeldir.
+`model` yeteneğiyle `host.generate`, kullanıcının Small Model'inden tek seferlik bir yanıt ister: bir özet, bir başlık, bir taslak. Hiçbir şey bir oturuma girmez, geçmiş tutulmaz ve eklenti asla bir sağlayıcı seçmez. OpenChamber, kendi arka plan işleri için kullandığı aynı modeli kullanır; bu model Ayarlar → Oturumlar → Small Model üzerinden ya da OpenCode yapılandırmasından seçilen model, kullanıcının çalıştığı sağlayıcının küçük modeli ya da kullanıcının OpenCode yapılandırmasındaki varsayılan modeldir.
 
 ```ts
 const { text } = await host.generate({

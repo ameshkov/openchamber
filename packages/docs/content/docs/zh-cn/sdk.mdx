@@ -116,7 +116,7 @@ OpenChamber 会读取清单，并弹出一个对话框列出扩展所请求的�
 
 ## 生成文本
 
-有了 `model` 能力，`host.generate` 会向用户的 Small Model 请求一次性回答：摘要、标题、草稿。内容不会进入任何会话，也不保留历史记录，扩展永远不能选择提供方。OpenChamber 使用它自己后台工作所用的同一个模型，即在 设置 → 会话 → Small Model 中选择的模型，或用户正在使用的提供方的小模型，或用户 OpenCode 配置中的默认模型。
+有了 `model` 能力，`host.generate` 会向用户的 Small Model 请求一次性回答：摘要、标题、草稿。内容不会进入任何会话，也不保留历史记录，扩展永远不能选择提供方。OpenChamber 使用它自己后台工作所用的同一个模型，即在 设置 → 会话 → Small Model 或 OpenCode 配置中选择的模型，或用户正在使用的提供方的小模型，或用户 OpenCode 配置中的默认模型。
 
 ```ts
 const { text } = await host.generate({

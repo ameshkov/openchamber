@@ -116,7 +116,7 @@ L'utilisateur voit la liste complète une seule fois, à l'installation de l'ext
 
 ## Générer du texte
 
-Avec la capacité `model`, `host.generate` demande au Small Model de l'utilisateur une réponse ponctuelle : un résumé, un titre, un brouillon. Rien n'entre dans une session, aucun historique n'est conservé, et l'extension ne choisit jamais de fournisseur. OpenChamber utilise le même modèle que pour son propre travail en arrière-plan, choisi dans Paramètres → Sessions → Small Model, ou le petit modèle du fournisseur avec lequel l'utilisateur travaille, ou le modèle par défaut de sa configuration OpenCode.
+Avec la capacité `model`, `host.generate` demande au Small Model de l'utilisateur une réponse ponctuelle : un résumé, un titre, un brouillon. Rien n'entre dans une session, aucun historique n'est conservé, et l'extension ne choisit jamais de fournisseur. OpenChamber utilise le même modèle que pour son propre travail en arrière-plan, choisi dans Paramètres → Sessions → Small Model ou dans la configuration OpenCode, ou le petit modèle du fournisseur avec lequel l'utilisateur travaille, ou le modèle par défaut de sa configuration OpenCode.
 
 ```ts
 const { text } = await host.generate({

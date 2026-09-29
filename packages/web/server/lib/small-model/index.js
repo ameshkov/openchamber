@@ -3,6 +3,8 @@ import { setTimeout as delay } from 'node:timers/promises';
 import os from 'os';
 import path from 'path';
 import { readMergedSettingsSync } from '../opencode/settings-files.js';
+import { readConfigLayers } from '../opencode/shared.js';
+import { parseModelSelection, readSectionEntry } from '../opencode/config-v2.js';
 import {
   findModelInfo,
   getDefaultModelInfo,
@@ -39,6 +41,33 @@ const readSmallModelSettingsOverride = () => {
   if (settings.smallModelUseDefault !== false) return null;
   const override = typeof settings.smallModelOverride === 'string' ? settings.smallModelOverride.trim() : '';
   return override || null;
+};
+
+/**
+ * The small model the user configured in OpenCode itself, or null.
+ *
+ * OpenCode 2 moved v1's top-level `small_model` onto its built-in `title`
+ * agent (`agents.title.model`); the native v2 key is read first, the v1 key as
+ * the fallback. Layers and precedence are OpenCode's own — `readConfigLayers`
+ * merges user < project < `OPENCODE_CONFIG`, and `readSectionEntry` takes the
+ * v2 `agents` section over the v1 `agent` one.
+ *
+ * A config that cannot be read is not a model choice: resolution falls through
+ * to the next step rather than failing a background call over a broken project
+ * file. A configured `#variant` is dropped like everywhere else in this chain;
+ * the resolution contract is `providerID`/`modelID`.
+ */
+const readOpenCodeConfigSmallModel = (directory) => {
+  let config;
+  try {
+    config = readConfigLayers(directory).mergedConfig;
+  } catch {
+    return null;
+  }
+  const title = readSectionEntry(config, 'agents', 'title').value;
+  const configured = parseModelSelection(title?.model) ?? parseModelSelection(config.small_model);
+  if (!configured) return null;
+  return { providerID: configured.providerID, modelID: configured.modelID };
 };
 
 export function parseModelRef(value) {
@@ -164,13 +193,17 @@ const pickSmallModel = (models, accept) => {
  *
  * 1. An explicit request model.
  * 2. OpenChamber's settings override (Settings → Sessions → Small Model).
- * 3. The small model of the caller's provider — the session's, or the one
+ * 3. The small model the user configured in OpenCode itself —
+ *    `agents.title.model`, or v1's top-level `small_model` —
+ *    `opencode-config`. An explicit user choice like the two above, so it
+ *    outranks the provider heuristic below and may name another provider.
+ * 4. The small model of the caller's provider — the session's, or the one
  *    in the composer (family scan above) — `session-provider-small`. A caller
  *    that must not leave that provider then takes its own model
  *    (`session-model`): costlier, but never someone else's subscription.
- * 4. `GET /api/model/default`: OpenCode's default model — `default`. This is
+ * 5. `GET /api/model/default`: OpenCode's default model — `default`. This is
  *    the chat default, not a small model; OpenCode's own small-model chain is
- *    not reachable over HTTP, which is why step 3 lives here.
+ *    not reachable over HTTP, which is why step 4 lives here.
  *
  * There is no step that picks a small model from whichever other provider
  * happens to be connected: the content (diffs, replies, session text) goes
@@ -182,6 +215,9 @@ const resolveSmallModel = async ({ client, directory, model, preferredProviderID
 
   const fromSettings = parseModelRef(readSmallModelSettingsOverride());
   if (fromSettings) return { ...fromSettings, source: 'settings' };
+
+  const fromConfig = readOpenCodeConfigSmallModel(directory);
+  if (fromConfig) return { ...fromConfig, source: 'opencode-config' };
 
   if (preferredProviderID) {
     const small = pickSmallModelInProvider(await listModelInfos(client, directory), preferredProviderID);
@@ -254,9 +290,10 @@ export async function generateSmallModelText({ prompt, system, maxOutputTokens, 
   }
 
   // A caller that must stay on its session's provider is only overruled by an
-  // explicit user choice (the settings override or a request model).
+  // explicit user choice (the settings override, a request model, or the small
+  // model configured in OpenCode's own config).
   if (restrictToPreferredProvider
-    && !['settings', 'request'].includes(resolved.source)
+    && !['settings', 'request', 'opencode-config'].includes(resolved.source)
     && preferredProviderID
     && resolved.providerID !== preferredProviderID) {
     throw Object.assign(

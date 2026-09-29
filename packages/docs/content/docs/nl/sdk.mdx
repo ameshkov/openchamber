@@ -116,7 +116,7 @@ Bij installatie ziet de gebruiker de volledige lijst en kan die goedkeuren of de
 
 ## Tekst genereren
 
-Met het recht `model` vraagt `host.generate` het Small Model van de gebruiker om een eenmalig antwoord, zoals een samenvatting, titel of concepttekst. Niets komt in een sessie terecht, er wordt geen geschiedenis bewaard en de extensie kiest nooit zelf een provider. OpenChamber gebruikt hetzelfde model als voor eigen achtergrondtaken: het model uit Instellingen → Sessies → Small Model, het kleine model van de provider waarmee de gebruiker werkt, of het standaardmodel uit de OpenCode-configuratie.
+Met het recht `model` vraagt `host.generate` het Small Model van de gebruiker om een eenmalig antwoord, zoals een samenvatting, titel of concepttekst. Niets komt in een sessie terecht, er wordt geen geschiedenis bewaard en de extensie kiest nooit zelf een provider. OpenChamber gebruikt hetzelfde model als voor eigen achtergrondtaken: het model uit Instellingen → Sessies → Small Model of de OpenCode-configuratie, het kleine model van de provider waarmee de gebruiker werkt, of het standaardmodel uit de OpenCode-configuratie.
 
 ```ts
 const { text } = await host.generate({

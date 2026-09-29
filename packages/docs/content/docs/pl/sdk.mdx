@@ -116,7 +116,7 @@ Użytkownik widzi pełną listę raz, przy instalacji rozszerzenia, i albo ją z
 
 ## Generowanie tekstu
 
-Dzięki uprawnieniu `model` `host.generate` prosi Small Model użytkownika o jednorazową odpowiedź: podsumowanie, tytuł, szkic. Nic nie trafia do sesji, historia nie jest zapisywana, a rozszerzenie nigdy nie wybiera dostawcy. OpenChamber używa tego samego modelu, którego używa do własnej pracy w tle, wybranego w Ustawienia → Sesje → Small Model, albo małego modelu dostawcy, z którym użytkownik akurat pracuje, albo domyślnego modelu z jego konfiguracji OpenCode.
+Dzięki uprawnieniu `model` `host.generate` prosi Small Model użytkownika o jednorazową odpowiedź: podsumowanie, tytuł, szkic. Nic nie trafia do sesji, historia nie jest zapisywana, a rozszerzenie nigdy nie wybiera dostawcy. OpenChamber używa tego samego modelu, którego używa do własnej pracy w tle, wybranego w Ustawienia → Sesje → Small Model albo w konfiguracji OpenCode, albo małego modelu dostawcy, z którym użytkownik akurat pracuje, albo domyślnego modelu z jego konfiguracji OpenCode.
 
 ```ts
 const { text } = await host.generate({
